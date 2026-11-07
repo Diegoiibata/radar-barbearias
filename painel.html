@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Barbeiro</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f5f7;
+            color: #1a1a1a;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 500px;
+            /* Força o formato mobile-first mesmo no computador */
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        /* Estilo dos Cartões (Ofertas e Reservas) */
+        div[style*="border"],
+        #vitrine-ofertas div,
+        #lista-reservas div {
+            background: #ffffff;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 20px !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px !important;
+        }
+
+        /* Estilo dos Formulários */
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: #fafafa;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Estilo dos Botões */
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: 0.2s;
+        }
+
+        button:active {
+            background-color: #333333;
+            transform: scale(0.98);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 30px 0;
+        }
+    </style>
+    <!-- Importação do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Painel de Controle</h1>
+        <p>Publicar nova vaga com desconto</p>
+    </header>
+
+    <main>
+        <!-- Formulário de inserção -->
+        <form id="form-oferta" onsubmit="event.preventDefault(); publicarOferta();">
+
+            <label for="preco-original">Preço Normal (R$):</label><br>
+            <input type="number" id="preco-original" step="0.01" required><br><br>
+
+            <label for="preco-promocional">Preço Promocional (R$):</label><br>
+            <input type="number" id="preco-promocional" step="0.01" required><br><br>
+
+            <label for="tempo-validade">A oferta expira em:</label><br>
+            <select id="tempo-validade">
+                <option value="1">1 hora</option>
+                <option value="2">2 horas</option>
+                <option value="3">3 horas</option>
+            </select><br><br>
+
+            <button type="submit">Publicar no Radar</button>
+
+        </form>
+    </main>
+    <hr>
+    <h2>Reservas Recebidas</h2>
+    <div id="lista-reservas">Buscando reservas...</div>
+
+    <script>
+        // 1. Conexão com o Supabase (use a sua URL e a chave publishable)
+        const supabaseUrl = 'https://bljuwqitgsppnnvoyfsg.supabase.co';
+        const supabaseKey = 'sb_publishable_bgy8n7b1Cb7T0PrMfsWF2A_93H3nD1m';
+        const cliente = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 2. O "CPF" da sua barbearia de teste (cole o ID longo aqui)
+        const idDaBarbearia = '409f5bf0-5606-4ec7-becf-c7b38f66183b';
+
+        async function publicarOferta() {
+            // Recolhe o que o barbeiro digitou nos campos
+            const precoNormal = document.getElementById('preco-original').value;
+            const precoDesconto = document.getElementById('preco-promocional').value;
+            const horasValidade = document.getElementById('tempo-validade').value;
+
+            // Calcula que horas são agora + as horas que o barbeiro escolheu
+            const dataLimite = new Date();
+            dataLimite.setHours(dataLimite.getHours() + parseInt(horasValidade));
+
+            // Envia os dados empacotados para a tabela 'ofertas'
+            const { error } = await cliente
+                .from('ofertas')
+                .insert([
+                    {
+                        barbearia_id: idDaBarbearia,
+                        preco_original: precoNormal,
+                        preco_promocional: precoDesconto,
+                        horario_limite: dataLimite.toISOString() // Formato de data universal
+                    }
+                ]);
+
+            // Verifica se deu certo
+            if (error) {
+                console.error("Erro ao gravar:", error);
+                alert("Erro ao publicar a oferta. Verifique o Console.");
+            } else {
+                alert("Sucesso! A vaga já está no Radar.");
+                document.getElementById('form-oferta').reset(); // Limpa os campos para a próxima
+            }
+        }
+        async function carregarReservas() {
+            const divReservas = document.getElementById('lista-reservas');
+
+            // Pede ao Supabase a lista de reservas
+            const { data: reservas, error } = await cliente
+                .from('reservas')
+                .select('*');
+
+            if (error) {
+                divReservas.innerHTML = "Erro ao carregar reservas.";
+                console.error(error);
+                return;
+            }
+
+            if (reservas.length === 0) {
+                divReservas.innerHTML = "Ainda não há reservas.";
+                return;
+            }
+
+            divReservas.innerHTML = ''; // Limpa o texto de carregamento
+
+            // Desenha um cartão para cada reserva encontrada
+            reservas.forEach(reserva => {
+                const cartao = document.createElement('div');
+                cartao.style.border = "1px dashed #333";
+                cartao.style.padding = "10px";
+                cartao.style.margin = "10px 0";
+                cartao.innerHTML = `
+            <p><strong>Voucher:</strong> ${reserva.codigo_voucher}</p>
+            <p><strong>WhatsApp:</strong> ${reserva.telefone_cliente}</p>
+            <p><strong>Status:</strong> ${reserva.status_pagamento}</p>
+        `;
+                divReservas.appendChild(cartao);
+            });
+        }
+
+        // Executa a função automaticamente assim que o barbeiro abre o painel
+        carregarReservas();
+    </script>
+</body>
+
+</html>
