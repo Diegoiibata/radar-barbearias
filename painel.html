@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Barbeiro</title>
     <style>
+        /* MANTIVE SEU CSS INTACTO - ELE ESTÁ ÓTIMO */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f4f5f7;
@@ -13,7 +14,6 @@
             margin: 0 auto;
             padding: 20px;
             max-width: 500px;
-            /* Força o formato mobile-first mesmo no computador */
         }
 
         header {
@@ -26,7 +26,6 @@
             margin-bottom: 5px;
         }
 
-        /* Estilo dos Cartões (Ofertas e Reservas) */
         div[style*="border"],
         #vitrine-ofertas div,
         #lista-reservas div {
@@ -38,7 +37,6 @@
             margin-bottom: 15px !important;
         }
 
-        /* Estilo dos Formulários */
         input,
         select {
             width: 100%;
@@ -56,7 +54,6 @@
             font-size: 0.9rem;
         }
 
-        /* Estilo dos Botões */
         button {
             background-color: #000000;
             color: #ffffff;
@@ -82,35 +79,37 @@
             margin: 30px 0;
         }
     </style>
-    <!-- Importação do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
     <header>
         <h1>Painel de Controle</h1>
-        <p>Publicar nova vaga com desconto</p>
+        <p>Publicar nova vaga no Radar</p>
     </header>
 
     <main>
-        <!-- Formulário de inserção -->
         <form id="form-oferta" onsubmit="event.preventDefault(); publicarOferta();">
+            
+            <!-- NOVO: Seleção do Serviço -->
+            <label for="servico">Serviço Ocioso:</label><br>
+            <select id="servico" required>
+                <option value="Corte Degradê + Barba">Corte Degradê + Barba</option>
+                <option value="Corte Simples (Máquina)">Corte Simples (Máquina)</option>
+                <option value="Sobrancelha + Acabamento">Sobrancelha + Acabamento</option>
+            </select><br><br>
 
             <label for="preco-original">Preço Normal (R$):</label><br>
             <input type="number" id="preco-original" step="0.01" required><br><br>
 
-            <label for="preco-promocional">Preço Promocional (R$):</label><br>
-            <input type="number" id="preco-promocional" step="0.01" required><br><br>
+            <label for="preco-desconto">Preço Promocional (R$):</label><br>
+            <input type="number" id="preco-desconto" step="0.01" required><br><br>
 
-            <label for="tempo-validade">A oferta expira em:</label><br>
-            <select id="tempo-validade">
-                <option value="1">1 hora</option>
-                <option value="2">2 horas</option>
-                <option value="3">3 horas</option>
-            </select><br><br>
+            <!-- NOVO: Quantidade de vagas disponíveis -->
+            <label for="vagas">Quantas vagas disponíveis?</label><br>
+            <input type="number" id="vagas" min="1" max="10" value="1" required><br><br>
 
-            <button type="submit">Publicar no Radar</button>
-
+            <button id="btn-submit" type="submit">Ativar Oferta no Site</button>
         </form>
     </main>
     <hr>
@@ -118,82 +117,81 @@
     <div id="lista-reservas">Buscando reservas...</div>
 
     <script>
-        // 1. Conexão com o Supabase (use a sua URL e a chave publishable)
+        // Mantive as suas credenciais reais do Supabase
         const supabaseUrl = 'https://bljuwqitgsppnnvoyfsg.supabase.co';
         const supabaseKey = 'sb_publishable_bgy8n7b1Cb7T0PrMfsWF2A_93H3nD1m';
         const cliente = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 2. O "CPF" da sua barbearia de teste (cole o ID longo aqui)
         const idDaBarbearia = '409f5bf0-5606-4ec7-becf-c7b38f66183b';
 
         async function publicarOferta() {
-            // Recolhe o que o barbeiro digitou nos campos
-            const precoNormal = document.getElementById('preco-original').value;
-            const precoDesconto = document.getElementById('preco-promocional').value;
-            const horasValidade = document.getElementById('tempo-validade').value;
+            const btn = document.getElementById('btn-submit');
+            btn.innerText = "Publicando...";
+            btn.disabled = true;
 
-            // Calcula que horas são agora + as horas que o barbeiro escolheu
-            const dataLimite = new Date();
-            dataLimite.setHours(dataLimite.getHours() + parseInt(horasValidade));
+            const servico = document.getElementById('servico').value;
+            const precoOriginal = parseFloat(document.getElementById('preco-original').value);
+            const precoDesconto = parseFloat(document.getElementById('preco-desconto').value);
+            const vagas = parseInt(document.getElementById('vagas').value);
 
-            // Envia os dados empacotados para a tabela 'ofertas'
+            // Alinhado com o schema exato que o index.html vai consumir
             const { error } = await cliente
                 .from('ofertas')
                 .insert([
                     {
                         barbearia_id: idDaBarbearia,
-                        preco_original: precoNormal,
-                        preco_promocional: precoDesconto,
-                        horario_limite: dataLimite.toISOString() // Formato de data universal
+                        servico: servico,
+                        preco_original: precoOriginal,
+                        preco_desconto: precoDesconto,
+                        vagas: vagas,
+                        status: 'ativa',
+                        link_pagamento: 'https://mpago.la/11BELme' // O seu link do Mercado Pago entra automaticamente aqui
                     }
                 ]);
 
-            // Verifica se deu certo
             if (error) {
                 console.error("Erro ao gravar:", error);
-                alert("Erro ao publicar a oferta. Verifique o Console.");
+                alert("Erro ao publicar a oferta. Verifique o banco de dados.");
             } else {
-                alert("Sucesso! A vaga já está no Radar.");
-                document.getElementById('form-oferta').reset(); // Limpa os campos para a próxima
+                alert("Sucesso! A vaga já está visível para os clientes no Radar.");
+                document.getElementById('form-oferta').reset();
             }
+            
+            btn.innerText = "Ativar Oferta no Site";
+            btn.disabled = false;
         }
+
         async function carregarReservas() {
             const divReservas = document.getElementById('lista-reservas');
 
-            // Pede ao Supabase a lista de reservas
             const { data: reservas, error } = await cliente
                 .from('reservas')
-                .select('*');
+                .select('*')
+                .order('created_at', { ascending: false }); // Traz as mais recentes primeiro
 
             if (error) {
                 divReservas.innerHTML = "Erro ao carregar reservas.";
-                console.error(error);
                 return;
             }
 
             if (reservas.length === 0) {
-                divReservas.innerHTML = "Ainda não há reservas.";
+                divReservas.innerHTML = "<p style='text-align:center; color:#666;'>Nenhuma reserva aprovada ainda.</p>";
                 return;
             }
 
-            divReservas.innerHTML = ''; // Limpa o texto de carregamento
+            divReservas.innerHTML = ''; 
 
-            // Desenha um cartão para cada reserva encontrada
             reservas.forEach(reserva => {
                 const cartao = document.createElement('div');
-                cartao.style.border = "1px dashed #333";
-                cartao.style.padding = "10px";
-                cartao.style.margin = "10px 0";
                 cartao.innerHTML = `
-            <p><strong>Voucher:</strong> ${reserva.codigo_voucher}</p>
-            <p><strong>WhatsApp:</strong> ${reserva.telefone_cliente}</p>
-            <p><strong>Status:</strong> ${reserva.status_pagamento}</p>
-        `;
+                    <p style="margin: 0 0 8px 0; color: #10b981; font-weight: bold;">💰 Pago</p>
+                    <p style="margin: 4px 0;"><strong>Voucher:</strong> ${reserva.codigo_voucher}</p>
+                    <p style="margin: 4px 0;"><strong>Cliente:</strong> ${reserva.telefone_cliente}</p>
+                `;
                 divReservas.appendChild(cartao);
             });
         }
 
-        // Executa a função automaticamente assim que o barbeiro abre o painel
         carregarReservas();
     </script>
 </body>

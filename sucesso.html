@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento Aprovado | Seu Voucher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f5f7;
+            color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .voucher-card {
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .icon-success {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+        .voucher-code {
+            background: #10b981;
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 800;
+            padding: 15px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            font-size: 0.9rem;
+            color: #444;
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="voucher-card">
+        <div class="icon-success">✅</div>
+        <h1>Pagamento Aprovado!</h1>
+        <p>Sua vaga está garantida.</p>
+        
+        <div class="voucher-code" id="codigo-voucher">GERANDO...</div>
+        
+        <div class="instructions">
+            <strong>Como usar:</strong><br>
+            Tire um print desta tela e apresente este código ao barbeiro ao chegar na barbearia para abater o valor da taxa do seu corte.
+        </div>
+    </div>
+
+</body>
+</html>

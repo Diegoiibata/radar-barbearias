@@ -1,178 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar de Ofertas</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f5f7;
-            color: #1a1a1a;
-            margin: 0 auto;
-            padding: 20px;
-            max-width: 500px;
-            /* Força o formato mobile-first mesmo no computador */
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        /* Estilo dos Cartões (Ofertas e Reservas) */
-        div[style*="border"],
-        #vitrine-ofertas div,
-        #lista-reservas div {
-            background: #ffffff;
-            border: none !important;
-            border-radius: 12px !important;
-            padding: 20px !important;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            margin-bottom: 15px !important;
-        }
-
-        /* Estilo dos Formulários */
-        input,
-        select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 5px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            background-color: #fafafa;
-        }
-
-        label {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        /* Estilo dos Botões */
-        button {
-            background-color: #000000;
-            color: #ffffff;
-            border: none;
-            padding: 15px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: 0.2s;
-        }
-
-        button:active {
-            background-color: #333333;
-            transform: scale(0.98);
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #e5e7eb;
-            margin: 30px 0;
-        }
-    </style>
-    <!-- Importação do motor do Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Radar de Ofertas | Barbearia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <header>
-        <h1>Cortes de Última Hora</h1>
-        <p>Aproveite horários vagos com desconto</p>
-    </header>
 
-    <!-- Âncora onde as ofertas vão aparecer -->
-    <main id="vitrine-ofertas">
-        <p>Buscando ofertas na sua região...</p>
-    </main>
+    <div class="app-container">
+        <header class="hero">
+            <h1>Descontos de última hora perto de você.</h1>
+            <p>Garanta seu Passe VIP e corte sem fila de espera hoje.</p>
+        </header>
 
-    <!-- Aqui entrará o nosso código JavaScript -->
+        <div class="offers-container" id="vitrine-ofertas"></div>
+    </div>
+
+    <!-- Importação do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Importação do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
         const supabaseUrl = 'https://bljuwqitgsppnnvoyfsg.supabase.co';
         const supabaseKey = 'sb_publishable_bgy8n7b1Cb7T0PrMfsWF2A_93H3nD1m';
-        const cliente = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // CORREÇÃO: Variável renomeada para clienteSupabase para evitar conflito no Safari
+        const clienteSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         async function carregarOfertas() {
-            const { data: ofertas, error } = await cliente
+            const vitrine = document.getElementById('vitrine-ofertas');
+            
+            // Usando a nova variável aqui
+            const { data: ofertas, error } = await clienteSupabase
                 .from('ofertas')
-                .select('*');
+                .select('*')
+                .eq('status', 'ativa')
+                .gt('vagas', 0); 
 
             if (error) {
-                console.error("Erro ao buscar ofertas:", error);
+                console.error('Erro ao buscar ofertas:', error);
+                vitrine.innerHTML = '<p>Erro ao carregar o sistema.</p>';
                 return;
             }
 
-            // 1. Encontra a âncora no HTML
-            const vitrine = document.getElementById('vitrine-ofertas');
+            if (ofertas.length === 0) {
+                vitrine.innerHTML = '<p style="text-align: center; color: #888;">Nenhuma vaga VIP disponível neste exato momento. Volte em breve!</p>';
+                return;
+            }
 
-            // 2. Limpa o texto inicial de "Buscando ofertas..."
-            vitrine.innerHTML = '';
+            vitrine.innerHTML = ''; 
 
-            // 3. Cria um ciclo para desenhar cada oferta que vier do banco
+            // Injeta os cartões com os dados reais do banco
             ofertas.forEach(oferta => {
-                // Cria uma caixa visual (div) para a oferta
-                const cartao = document.createElement('div');
-
-                // Adiciona um estilo básico à caixa
-                cartao.style.border = "1px solid #ccc";
-                cartao.style.padding = "15px";
-                cartao.style.margin = "10px 0";
-                cartao.style.borderRadius = "8px";
-
-                // Injeta os dados do banco de dados (preços) no texto do cartão
-                cartao.innerHTML = `
-            <h2>Corte de Última Hora</h2>
-            <p>De: R$ ${oferta.preco_original} por <strong>R$ ${oferta.preco_promocional}</strong></p>
-            <button onclick="fazerReserva('${oferta.id}')">Garantir Vaga (R$ 5)</button>
-        `;
-
-                // Cola o cartão pronto dentro da vitrine no ecrã
-                vitrine.appendChild(cartao);
+                const cartao = `
+                    <div class="offer-card">
+                        <div class="badge">🔥 SÓ ${oferta.vagas} VAGA(S) HOJE</div>
+                        <h3>${oferta.servico}</h3>
+                        <div class="price-container">
+                            <span class="old-price">R$ ${oferta.preco_original.toFixed(2).replace('.', ',')}</span>
+                            <span class="new-price">R$ ${oferta.preco_desconto.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <button class="btn-reserve" onclick="window.location.href='${oferta.link_pagamento}'">Garantir Passe VIP</button>
+                    </div>
+                `;
+                vitrine.innerHTML += cartao;
             });
         }
 
-        carregarOfertas();
-        async function fazerReserva(idDaOferta) {
-            const telefone = prompt("Para garantir a vaga, digite o seu WhatsApp (com indicativo):");
-
-            if (!telefone) {
-                alert("Precisa de introduzir um número de telefone para continuar.");
-                return;
-            }
-
-            // 1. Grava a intenção de reserva no Supabase
-            const codigoVoucher = "PIX-" + Math.floor(Math.random() * 10000);
-            const { error } = await cliente
-                .from('reservas')
-                .insert([{
-                    oferta_id: idDaOferta,
-                    telefone_cliente: telefone,
-                    codigo_voucher: codigoVoucher
-                }]);
-
-            if (error) {
-                console.error("Erro:", error);
-                alert("Erro ao tentar reservar. Tente novamente.");
-                return;
-            }
-
-            // 2. Simula o código "Copia e Cola" do Mercado Pago para a demonstração
-            const codigoPixSimulado = "00020101021226850014br.gov.bcb.pix2563pix.mercadopago.com.br/qr/v2/simulador-teste-mvp-12345";
-
-            prompt(`Vaga pré-reservada! O seu voucher é o ${codigoVoucher}.\n\nCopie o código PIX abaixo e pague na sua app do banco (Simulação MVP):`, codigoPixSimulado);
-        }
+        // Dispara a função automaticamente quando a página carrega
+        window.onload = carregarOfertas;
     </script>
-</body>
 
+</body>
 </html>
